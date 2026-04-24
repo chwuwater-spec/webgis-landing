@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebGIS 停水方案實戰課｜手機開圖 10 分鐘算出影響戶數</title>
+  <meta name="description" content="讓自來水工程師不用再翻紙本管線圖找閥門。WebGIS 實戰課，手機開圖、框選範圍、自動算影響戶數。">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Rubik:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --primary: #E11D48;
+      --secondary: #FB7185;
+      --cta: #2563EB;
+      --bg: #FFF1F2;
+      --text: #0A0A0A;
+      --accent: #FACC15;
+      --border: #0A0A0A;
+      --shadow: 6px 6px 0 #0A0A0A;
+      --shadow-sm: 4px 4px 0 #0A0A0A;
+      --shadow-lg: 10px 10px 0 #0A0A0A;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Rubik', 'Noto Sans TC', sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.7;
+      margin: 0;
+      overflow-x: hidden;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Outfit', 'Noto Sans TC', sans-serif;
+      font-weight: 900;
+      line-height: 1.15;
+      letter-spacing: -0.01em;
+    }
+    h1 { font-size: clamp(2.5rem, 6vw, 5rem); }
+    h2 { font-size: clamp(2rem, 4.5vw, 3.5rem); }
+    h3 { font-size: clamp(1.4rem, 2.5vw, 2rem); }
+
+    /* ===== Nav ===== */
+    .site-nav {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--bg);
+      border-bottom: 3px solid var(--border);
+      transition: box-shadow 200ms ease;
+    }
+    .site-nav.scrolled { box-shadow: 0 4px 0 var(--border); }
+    .nav-inner {
+      max-width: 1280px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 1.5rem;
+    }
+    .nav-brand {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 900; font-size: 1.15rem;
+      text-decoration: none; color: var(--text);
+      background: var(--accent);
+      padding: 0.4rem 0.9rem;
+      border: 3px solid var(--border);
+      box-shadow: var(--shadow-sm);
+      transition: transform 120ms ease;
+    }
+    .nav-brand:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--border); }
+    .nav-links {
+      display: flex; gap: 1.75rem; list-style: none; margin: 0; padding: 0;
+      font-weight: 500;
+    }
+    .nav-links a {
+      text-decoration: none; color: var(--text);
+      border-bottom: 2px solid transparent;
+      padding-bottom: 2px;
+      transition: border-color 120ms ease;
+    }
+    .nav-links a:hover { border-bottom-color: var(--primary); }
+    .nav-cta {
+      background: var(--cta); color: #fff;
+      padding: 0.55rem 1.1rem;
+      border: 3px solid var(--border);
+      box-shadow: var(--shadow-sm);
+      font-weight: 700;
+      text-decoration: none;
+      transition: transform 120ms ease;
+    }
+    .nav-cta:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--border); }
+    @media (max-width: 860px) { .nav-links { display: none; } }
+
+    /* ===== Hero（Vertical Intro） ===== */
+    #hero {
+      padding: 5rem 1.5rem 6rem;
+      position: relative;
+      overflow: hidden;
+      border-bottom: 4px solid var(--border);
+    }
+    #hero::before {
+      content: "";
+      position: absolute;
+      top: 10%; right: -80px;
+      width: 300px; height: 300px;
+      background: var(--accent);
+      border: 4px solid var(--border);
+      transform: rotate(12deg);
+      z-index: 0;
+      box-shadow: var(--shadow-lg);
+    }
+    #hero::after {
+      content: "";
+      position: absolute;
+      bottom: -60px; left: -60px;
+      width: 200px; height: 200px;
+      background: var(--secondary);
+      border: 4px solid var(--border);
+      border-radius: 50%;
+      z-index: 0;
+    }
+    .hero-inner {
+      max-width: 980px; margin: 0 auto;
+      position: relative; z-index: 1;
+    }
+    .hero-tag {
+      display: inline-block;
+      background: var(--text); color: #fff;
+      padding: 0.4rem 0.9rem;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      margin-bottom: 1.75rem;
+      border: 3px solid var(--border);
+    }
+    #hero h1 { margin: 0 0 1.5rem; max-width: 18ch; }
+    #hero h1 em {
+      background: var(--primary); color: #fff;
+      font-style: normal;
+      padding: 0 0.4rem;
+      box-decoration-break: clone;
+      -webkit-box-decoration-break: clone;
+    }
+    .hero-sub {
+      font-size: clamp(1.1rem, 1.6vw, 1.35rem);
+      font-weight: 500;
+      max-width: 46ch;
+      margin-bottom: 2.5rem;
+    }
+    .hero-ctas { display: flex; gap: 1rem; flex-wrap: wrap; }
+    .cta-primary, .cta-secondary {
+      display: inline-block;
+      padding: 1rem 2rem;
+      font-weight: 700;
+      font-size: 1.05rem;
+      text-decoration: none;
+      border: 3px solid var(--border);
+      transition: all 150ms ease;
+      cursor: pointer;
+    }
+    .cta-primary {
+      background: var(--cta); color: #fff;
+      box-shadow: var(--shadow);
+    }
+    .cta-primary:hover { transform: translate(-3px, -3px); box-shadow: 9px 9px 0 var(--border); }
+    .cta-primary:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--border); }
+    .cta-secondary {
+      background: #fff; color: var(--text);
+      box-shadow: var(--shadow-sm);
+    }
+    .cta-secondary:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--border); }
+
+    /* ===== Journey (Horizontal Scroll) ===== */
+    #journey {
+      position: relative;
+      border-bottom: 4px solid var(--border);
+      background: #fff;
+    }
+    .journey-header {
+      max-width: 1280px; margin: 0 auto;
+      padding: 4rem 1.5rem 2rem;
+    }
+    .journey-header h2 { margin: 0; max-width: 22ch; }
+    .journey-hint {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      margin-top: 1rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--primary);
+    }
+    .journey-hint::before {
+      content: ""; width: 32px; height: 2px; background: var(--primary);
+    }
+    .journey-track {
+      display: flex;
+      gap: 1.75rem;
+      padding: 2rem 1.5rem 5rem;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scroll-padding-left: 1.5rem;
+      scrollbar-width: thin;
+      scrollbar-color: var(--text) transparent;
+    }
+    .journey-track::-webkit-scrollbar { height: 10px; }
+    .journey-track::-webkit-scrollbar-track { background: transparent; border-top: 2px solid var(--border); }
+    .journey-track::-webkit-scrollbar-thumb { background: var(--text); border: 2px solid var(--border); }
+
+    .chapter {
+      flex: 0 0 min(85vw, 480px);
+      scroll-snap-align: start;
+      border: 4px solid var(--border);
+      padding: 2rem;
+      position: relative;
+      box-shadow: var(--shadow-lg);
+      display: flex; flex-direction: column;
+    }
+    .chapter[data-chapter="1"] { background: #FFF1F2; }
+    .chapter[data-chapter="2"] { background: var(--accent); }
+    .chapter[data-chapter="3"] { background: var(--secondary); color: #fff; }
+    .chapter[data-chapter="3"] .chapter-num { color: #fff; background: var(--text); }
+    .chapter-num {
+      display: inline-block;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 900;
+      font-size: 0.95rem;
+      background: var(--text); color: #fff;
+      padding: 0.35rem 0.8rem;
+      border: 3px solid var(--border);
+      margin-bottom: 1.5rem;
+      letter-spacing: 0.05em;
+      align-self: flex-start;
+    }
+    .chapter h3 { margin: 0 0 1rem; font-size: 1.75rem; }
+    .chapter-body { font-size: 1.05rem; line-height: 1.65; }
+    .chapter-body ul { padding-left: 1.1rem; margin: 0.5rem 0; }
+    .chapter-body li { margin-bottom: 0.75rem; }
+
+    @media (max-width: 640px) {
+      .chapter { flex: 0 0 90vw; padding: 1.5rem; box-shadow: var(--shadow); }
+    }
+
+    /* ===== About ===== */
+    #about {
+      padding: 5rem 1.5rem;
+      border-bottom: 4px solid var(--border);
+    }
+    .about-inner {
+      max-width: 820px; margin: 0 auto;
+    }
+    #about h2 { margin: 0 0 2rem; }
+    #about p { font-size: 1.15rem; margin-bottom: 1.25rem; }
+    .about-highlight {
+      background: var(--accent);
+      border: 3px solid var(--border);
+      padding: 1.25rem 1.5rem;
+      margin-top: 2rem;
+      font-weight: 600;
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* ===== Learn (Bento inside vertical) ===== */
+    #learn {
+      padding: 5rem 1.5rem;
+      border-bottom: 4px solid var(--border);
+      background: #fff;
+    }
+    .learn-inner {
+      max-width: 1100px; margin: 0 auto;
+    }
+    #learn h2 { margin: 0 0 1rem; }
+    .learn-sub { font-size: 1.1rem; margin-bottom: 2.5rem; max-width: 48ch; }
+    .learn-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.5rem;
+    }
+    .learn-card {
+      background: var(--bg);
+      border: 3px solid var(--border);
+      padding: 1.75rem;
+      box-shadow: var(--shadow-sm);
+      transition: all 150ms ease;
+    }
+    .learn-card:hover { transform: translate(-3px, -3px); box-shadow: 7px 7px 0 var(--border); }
+    .learn-card:nth-child(1) { background: var(--primary); color: #fff; }
+    .learn-card:nth-child(2) { background: var(--accent); }
+    .learn-card:nth-child(3) { background: #fff; }
+    .learn-card:nth-child(4) { background: var(--secondary); color: #fff; }
+    .learn-num {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 900;
+      font-size: 2.5rem;
+      line-height: 1;
+      margin-bottom: 1rem;
+      opacity: 0.9;
+    }
+    .learn-text { font-size: 1.05rem; line-height: 1.6; font-weight: 500; }
+    @media (max-width: 720px) {
+      .learn-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ===== Audience ===== */
+    #audience {
+      padding: 5rem 1.5rem;
+      border-bottom: 4px solid var(--border);
+      background: var(--primary);
+      color: #fff;
+    }
+    .audience-inner { max-width: 820px; margin: 0 auto; }
+    #audience h2 { margin: 0 0 2rem; }
+    .audience-list {
+      list-style: none;
+      padding: 0; margin: 0;
+      display: grid;
+      gap: 1rem;
+    }
+    .audience-list li {
+      background: #fff;
+      color: var(--text);
+      border: 3px solid var(--border);
+      padding: 1.25rem 1.5rem;
+      font-size: 1.05rem;
+      font-weight: 500;
+      box-shadow: var(--shadow-sm);
+      position: relative;
+      padding-left: 3.5rem;
+    }
+    .audience-list li::before {
+      content: "✓";
+      position: absolute;
+      left: 1rem; top: 50%;
+      transform: translateY(-50%);
+      width: 32px; height: 32px;
+      background: var(--accent);
+      border: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900;
+      color: var(--text);
+    }
+
+    /* ===== Final CTA ===== */
+    #cta-final {
+      padding: 6rem 1.5rem;
+      text-align: center;
+      background: var(--text);
+      color: #fff;
+      position: relative;
+      overflow: hidden;
+    }
+    #cta-final::before {
+      content: "";
+      position: absolute;
+      top: -40px; left: 50%;
+      transform: translateX(-50%) rotate(-3deg);
+      width: 120%;
+      height: 80px;
+      background: var(--accent);
+      border-bottom: 4px solid var(--border);
+    }
+    .cta-inner { max-width: 720px; margin: 0 auto; position: relative; z-index: 1; }
+    #cta-final h2 { margin: 3rem 0 1.25rem; color: #fff; }
+    #cta-final p { font-size: 1.15rem; margin-bottom: 2.5rem; opacity: 0.85; }
+    #cta-final .cta-primary {
+      font-size: 1.2rem;
+      padding: 1.2rem 2.5rem;
+    }
+
+    /* ===== Footer ===== */
+    footer {
+      background: var(--bg);
+      padding: 2rem 1.5rem;
+      text-align: center;
+      font-size: 0.9rem;
+      border-top: 4px solid var(--border);
+      color: var(--text);
+      opacity: 0.7;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ===== Nav ===== -->
+  <nav class="site-nav" id="siteNav">
+    <div class="nav-inner">
+      <a class="nav-brand" href="#top">WebGIS 停水課</a>
+      <ul class="nav-links">
+        <li><a href="#journey">為什麼要學</a></li>
+        <li><a href="#about">課程介紹</a></li>
+        <li><a href="#learn">你會帶走</a></li>
+        <li><a href="#audience">適合誰</a></li>
+      </ul>
+      <a class="nav-cta" href="#cta-final">報名</a>
+    </div>
+  </nav>
+
+  <a id="top"></a>
+
+  <!-- ===== 1. Hero ===== -->
+  <section id="hero">
+    <div class="hero-inner">
+      <span class="hero-tag">WEBGIS · 線上實戰課</span>
+      <h1>讓自來水工程師不用再翻 <em>紙本管線圖</em> 找閥門</h1>
+      <p class="hero-sub">手機打開地圖、框選範圍、自動算出影響戶數與通知名單。原本半天的停水作業，10 分鐘搞定。</p>
+      <div class="hero-ctas">
+        <a class="cta-primary" href="#cta-final">立即報名</a>
+        <a class="cta-secondary" href="#journey">看看痛點有多痛 →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 2. Journey (Horizontal Scroll) ===== -->
+  <section id="journey">
+    <div class="journey-header">
+      <h2>從紙本到數位的三段旅程</h2>
+      <span class="journey-hint">往右滑看全程 →</span>
+    </div>
+    <div class="journey-track" id="journeyTrack">
+      <article class="chapter" data-chapter="1">
+        <span class="chapter-num">CH 01 · 現場痛</span>
+        <h3>半個世紀沒變的出勤包</h3>
+        <div class="chapter-body">
+          <ul>
+            <li>帶著厚厚的紙本圖說出勤，想確認某條管線還得回辦公室翻檔</li>
+            <li>長官臨時問「這次停水影響幾戶？」翻紙本、對地址表，一小時還不一定算得準</li>
+            <li>新進同仁不熟管線配置，要老師傅陪出勤；老師傅退休後，這塊沒人接</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="chapter" data-chapter="2">
+        <span class="chapter-num">CH 02 · 轉型方案</span>
+        <h3>把一切搬上 WebGIS</h3>
+        <div class="chapter-body">
+          <p>不是教你變 GIS 專家。只教自來水場景需要的那 20% 工具操作。</p>
+          <p>剩下的時間，全拿來練三大實戰任務：</p>
+          <ul>
+            <li>停水方案規劃</li>
+            <li>爆管應變與閥門操作</li>
+            <li>跨單位通報與影響戶數估算</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="chapter" data-chapter="3">
+        <span class="chapter-num">CH 03 · 帶回單位</span>
+        <h3>下課就能用，不是上完就忘</h3>
+        <div class="chapter-body">
+          <p>課程設計對齊公部門實際流程，講師理解工班、調度、長官三種視角的差異。</p>
+          <p>你會把「即戰力」帶回單位——<br>不是多一本筆記，是真的把半天工作縮到 10 分鐘。</p>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- ===== 3. About ===== -->
+  <section id="about">
+    <div class="about-inner">
+      <h2>這門課，為了誰做的？</h2>
+      <p>還在用紙本管線圖嗎？這門課帶你一步一步把單位的停水作業搬到 WebGIS 上——手機打開地圖、框選範圍、自動算出影響戶數與通知名單，原本半天的工作 10 分鐘搞定。</p>
+      <p>我們不教你變 GIS 專家，只教「自來水場景」需要的那 20% 工具操作，剩下的時間全拿來練停水方案、爆管應變、跨單位通報三大實戰任務。</p>
+      <p>講師長期服務自來水產業，理解工班、調度、長官三種視角的需求差異，課程設計直接對齊公部門實際流程。</p>
+      <div class="about-highlight">
+        ⚡ 不追求「什麼都會」，只追求「回到單位馬上能用」。
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 4. Learn ===== -->
+  <section id="learn">
+    <div class="learn-inner">
+      <h2>上完課，你會帶走這 4 個能力</h2>
+      <p class="learn-sub">每個能力都對應到你現在最常卡關的場景。不是操作手冊條列，是你會真的用的工作流。</p>
+      <div class="learn-grid">
+        <div class="learn-card">
+          <div class="learn-num">01</div>
+          <div class="learn-text">獨立在 WebGIS 平台上載入自來水管線圖層，查詢任一管段的屬性（管徑、材質、埋設年份）</div>
+        </div>
+        <div class="learn-card">
+          <div class="learn-num">02</div>
+          <div class="learn-text">框選爆管位置，自動列出需關閉的閥門與受影響用戶清單，10 分鐘產出停水通知範圍</div>
+        </div>
+        <div class="learn-card">
+          <div class="learn-num">03</div>
+          <div class="learn-text">用手機在施工現場即時查圖、定位管線、回報異常點，不用再帶紙本圖說出勤</div>
+        </div>
+        <div class="learn-card">
+          <div class="learn-num">04</div>
+          <div class="learn-text">產出給長官看的停水影響報告（含戶數、重要用戶如醫院學校、地圖截圖），一鍵匯出 PDF</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 5. Audience ===== -->
+  <section id="audience">
+    <div class="audience-inner">
+      <h2>這門課適合你，如果你是——</h2>
+      <ul class="audience-list">
+        <li>自來水事業新進同仁，想快速上手管線資料查詢與停水作業</li>
+        <li>已有基礎操作經驗、想精進 WebGIS 應用深度的資深同仁</li>
+        <li>負責停水方案規劃或現場施工派遣的承辦</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ===== 6. Final CTA ===== -->
+  <section id="cta-final">
+    <div class="cta-inner">
+      <h2>把單位的停水作業，帶進 21 世紀</h2>
+      <p>一次課程、一輩子省下來的翻圖時間。</p>
+      <a class="cta-primary" href="#">立即報名</a>
+    </div>
+  </section>
+
+  <footer>
+    © WebGIS 停水方案實戰課
+  </footer>
+
+  <script>
+    // Nav scroll shadow
+    const nav = document.getElementById('siteNav');
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 4) nav.classList.add('scrolled');
+      else nav.classList.remove('scrolled');
+    }, { passive: true });
+  </script>
+
+</body>
+</html>
